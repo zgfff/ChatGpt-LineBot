@@ -38,45 +38,77 @@ def handle_message(event):
     user_id = event.source.user_id
     user_text = event.message.text.strip()
 
-    # Check if the user is in the process of a conversation
-    if user_id in user_state:
-        if user_state[user_id] == "awaiting_description":
-            # If user was asked for a description, process the reply and generate image
-            try:
-                prompt = user_text  # Use the user's message as the prompt for image generation
-                img_response = client.images.generate(
-                    model="dall-e-3",
-                    prompt=prompt,
-                    size="1024x1024",
-                    quality="hd",
-                    n=1
-                )
-                image_url = img_response.data[0].url
-
-                # Send the generated image back to the user
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    [
-                        ImageSendMessage(original_content_url=image_url, preview_image_url=image_url),
-                        TextSendMessage(text="นี่คือภาพที่คุณขอมา")
-                    ]
-                )
-                # Reset state after processing the message
-                user_state.pop(user_id, None)
-            except Exception as e:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการสร้างภาพ: {e}")
-                )
-                user_state.pop(user_id, None)
-        else:
-            # If the bot is not in an expected state, reset the state
-            user_state.pop(user_id, None)
-
-    else:
-        # If it's the first message or a new conversation, ask what image to generate
-        user_state[user_id] = "awaiting_description"
+    # กรณีที่ผู้ใช้ต้องการคุย
+    if user_text.lower() == "สวัสดี" or "hello" in user_text.lower():
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="สวัสดีครับ! คุณต้องการให้ผมสร้างภาพอะไรให้คุณ? กรุณาบอกคำอธิบายสั้นๆ เกี่ยวกับภาพที่คุณต้องการ")
+            TextSendMessage(text="สวัสดีครับ! คุณสามารถพูดคุยกับผมได้ หรืออยากให้ผมสร้างภาพให้คุณ? พิมพ์คำขอได้เลย")
+        )
+        user_state[user_id] = "awaiting_interaction"  # กำหนดสถานะเป็นการสนทนา
+
+    # ถ้าผู้ใช้ต้องการให้สร้างภาพ
+    elif "สร้างภาพ" in user_text:
+        # ถามคำอธิบายสำหรับการสร้างภาพ
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="กรุณาบอกคำอธิบายของภาพที่คุณต้องการ")
+        )
+        user_state[user_id] = "awaiting_description"  # รอคำอธิบาย
+
+    # หากผู้ใช้กำลังอยู่ในสถานะรอคำอธิบายเพื่อสร้างภาพ
+    elif user_id in user_state and user_state[user_id] == "awaiting_description":
+        try:
+            # ใช้ข้อความของผู้ใช้เป็น prompt สำหรับสร้างภาพ
+            prompt = user_text
+            img_response = client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024",
+                quality="hd",
+                n=1
+            )
+            image_url = img_response.data[0].url
+
+            # ส่งภาพกลับไปให้ผู้ใช้
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    ImageSendMessage(original_content_url=image_url, preview_image_url=image_url),
+                    TextSendMessage(text="นี่คือภาพที่คุณขอมา")
+                ]
+            )
+            user_state.pop(user_id, None)  # รีเซ็ตสถานะหลังการสร้างภาพเสร็จ
+
+        except Exception as e:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการสร้างภาพ: {e}")
+            )
+            user_state.pop(user_id, None)
+
+    # กรณีที่ผู้ใช้ต้องการสนทนากับบอท
+    elif user_id in user_state and user_state[user_id] == "awaiting_interaction":
+        try:
+            # ใช้ GPT (ChatGPT) สำหรับการสนทนา
+            chat_response = client.completions.create(
+                model="gpt-4",
+                prompt=user_text,
+                max_tokens=150
+            )
+            bot_reply = chat_response.choices[0].text.strip()
+            
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=bot_reply)
+            )
+        except Exception as e:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการตอบคำถาม: {e}")
+            )
+    else:
+        # การตอบกลับแบบอื่นๆ
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="ผมไม่เข้าใจคำขอของคุณครับ กรุณาพิมพ์ 'สวัสดี' เพื่อเริ่มต้นการสนทนา")
         )
