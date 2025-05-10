@@ -42,16 +42,16 @@ def handle_message(event):
     if user_text.lower() == "สวัสดี" or "hello" in user_text.lower():
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="สวัสดีครับ! ผมคือนักออกแบบลายผ้าไหม\nถ้าต้องการให้ผมสร้างลายผ้าไหมให้คุณ?\nพิมพ์ 'สร้างลายผ้าไหม' ได้เลย")
+            TextSendMessage(text="สวัสดีครับ! ผมคือนักออกแบบลายผ้าไหม\nอยากให้ผมสร้างลายผ้าไหมให้คุณ?\nพิมพ์ 'สร้างลายผ้าไหม' ได้เลย")
         )
         user_state[user_id] = "awaiting_interaction"  # กำหนดสถานะเป็นการสนทนา
 
     # ถ้าผู้ใช้ต้องการให้สร้างภาพ
-    elif "สร้างภาพ" in user_text:
+    elif "สร้างลายผ้าไหม" in user_text:
         # ถามคำอธิบายสำหรับการสร้างภาพ
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="กรุณาบอกคำอธิบายของภาพที่คุณต้องการ")
+            TextSendMessage(text="กรุณาบอกคำอธิบายของลายผ้าไหมที่คุณต้องการ")
         )
         user_state[user_id] = "awaiting_description"  # รอคำอธิบาย
 
@@ -67,12 +67,14 @@ def handle_message(event):
                 quality="hd",
                 n=1
             )
+            image_url = img_response.data[0].url
+
             # ส่งภาพกลับไปให้ผู้ใช้
             line_bot_api.reply_message(
                 event.reply_token,
                 [
                     ImageSendMessage(original_content_url=image_url, preview_image_url=image_url),
-                    TextSendMessage(text="นี่คือภาพที่คุณขอมา")
+                    TextSendMessage(text="นี่คือลายที่คุณขอมา")
                 ]
             )
             user_state.pop(user_id, None)  # รีเซ็ตสถานะหลังการสร้างภาพเสร็จ
@@ -83,6 +85,7 @@ def handle_message(event):
                 TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการสร้างภาพ: {e}")
             )
             user_state.pop(user_id, None)
+
 # ใช้ GPT เพื่อตอบคำถามทั่วไป
     else:
         try:
