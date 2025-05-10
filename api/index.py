@@ -67,25 +67,25 @@ def handle_message(event):
                 quality="hd",
                 n=1
             )
-            image_url = img_response.data[0].url
+             # รับ URL ของภาพที่สร้างขึ้น
+            image_url = response['data'][0]['url']
 
-            # ส่งภาพกลับไปให้ผู้ใช้
+            # ข้อมูลลักษณะของภาพที่สร้าง
+            image_description = f"ภาพนี้เป็นการสร้างตามคำอธิบาย: '{description}' ซึ่งมีลักษณะเป็น... (คำอธิบายลักษณะภาพ)"
+
+            # ส่งภาพและคำอธิบายให้ผู้ใช้
             line_bot_api.reply_message(
                 event.reply_token,
                 [
                     ImageSendMessage(original_content_url=image_url, preview_image_url=image_url),
-                    TextSendMessage(text="นี่คือภาพที่คุณขอมา")
+                    TextSendMessage(text=image_description)
                 ]
             )
-            user_state.pop(user_id, None)  # รีเซ็ตสถานะหลังการสร้างภาพเสร็จ
-
         except Exception as e:
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการสร้างภาพ: {e}")
             )
-            user_state.pop(user_id, None)
-
 # ใช้ GPT เพื่อตอบคำถามทั่วไป
     else:
         try:
