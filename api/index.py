@@ -34,33 +34,45 @@ def callback():
 
     return 'OK'
 
+# @line_handler.add(MessageEvent, message=TextMessage)
+# def handle_message(event):
+#     global working_status
+
+#     user_text = event.message.text.strip()
+
+#     if user_text == "啟動":
+#         working_status = True
+#         line_bot_api.reply_message(
+#             event.reply_token,
+#             TextSendMessage(text="我是時下流行的AI智能，目前可以為您服務囉，歡迎來跟我互動~")
+#         )
+#         return
+
+#     if user_text == "安靜":
+#         working_status = False
+#         line_bot_api.reply_message(
+#             event.reply_token,
+#             TextSendMessage(text="感謝您的使用，若需要我的服務，請跟我說 「啟動」 謝謝~")
+#         )
+#         return
+
+#     if working_status:
+#         chatgpt.add_msg(f"Human:{user_text}?\n")
+#         reply_msg = chatgpt.get_response().replace("AI:", "", 1)
+#         chatgpt.add_msg(f"AI:{reply_msg}\n")
+#         line_bot_api.reply_message(
+#             event.reply_token,
+#             TextSendMessage(text=reply_msg)
+#         )
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    global working_status
-    
-    user_text = event.message.text.strip()
+    user_text = event.message.text
+    print(f"[DEBUG] User said: {user_text}")
 
-    if user_text == "啟動":
-        working_status = True
+    try:
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="我是時下流行的AI智能，目前可以為您服務囉，歡迎來跟我互動~")
+            TextSendMessage(text=f"คุณพิมพ์ว่า: {user_text}")
         )
-        return
-
-    if user_text == "安靜":
-        working_status = False
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="感謝您的使用，若需要我的服務，請跟我說 「啟動」 謝謝~")
-        )
-        return
-
-    if working_status:
-        chatgpt.add_msg(f"Human:{user_text}?\n")
-        reply_msg = chatgpt.get_response().replace("AI:", "", 1)
-        chatgpt.add_msg(f"AI:{reply_msg}\n")
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_msg)
-        )
+    except Exception as e:
+        print(f"[ERROR] Failed to reply: {e}")
