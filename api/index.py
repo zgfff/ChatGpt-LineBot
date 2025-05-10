@@ -33,37 +33,38 @@ def callback():
         abort(400)
     return 'OK'
 
+from linebot.models import TextSendMessage, ImageSendMessage
+
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_text = event.message.text.strip()
+    print(f"[DEBUG] User said: {user_text}")
+    
+    # สร้างคำอธิบายจาก ChatGPT
+    chatgpt.add_msg(f"Human: โปรดอธิบายลวดลายผ้าไหมในหัวข้อ '{user_text}' อย่างสร้างสรรค์\n")
+    explanation = chatgpt.get_response().replace("AI:", "", 1).strip()
+    chatgpt.add_msg(f"AI: {explanation}\n")
 
-    if "ผ้าไหม" in user_text or "ลายผ้า" in user_text:
-        try:
-            response = client.images.generate(
-                model="dall-e-3",
-                prompt="ลายผ้าไหมพื้นเมืองโทนคราม รูปทรงเรขาคณิตสมมาตร มีลายละเอียดแบบทอมือจากสกลนคร",
-                size="1024x1024",
-                quality="standard",
-                n=1
+    # สร้างภาพจาก DALL·E (OpenAI Image API)
+    response = openai.Image.create(
+        prompt=user_text,
+        n=1,
+        size="1024x1024"
+    )
+    image_url = response['data'][0]['url']
+
+    # ส่งทั้งภาพ + ข้อความกลับไปยัง LINE
+    line_bot_api.reply_message(
+        event.reply_token,
+        [
+            TextSendMessage(text=explanation),
+            ImageSendMessage(
+                original_content_url=image_url,
+                preview_image_url=image_url
             )
-            image_url = response.data[0].url
-            line_bot_api.reply_message(
-                event.reply_token,
-                ImageSendMessage(
-                    original_content_url=image_url,
-                    preview_image_url=image_url
-                )
-            )
-        except Exception as e:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=f"ขออภัย ไม่สามารถสร้างภาพได้: {e}")
-            )
-    else:
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"คุณพิมพ์ว่า: {user_text}")
-        )
+        ]
+    )
+
 
 if __name__ == "__main__":
     app.run()
