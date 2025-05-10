@@ -42,7 +42,7 @@ def handle_message(event):
     if user_text.lower() == "สวัสดี" or "hello" in user_text.lower():
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="สวัสดีครับ! คุณสามารถพูดคุยกับผมได้ หรืออยากให้ผมสร้างภาพให้คุณ? พิมพ์ 'สร้างภาพ' ได้เลย")
+            TextSendMessage(text="สวัสดีครับ! ผมคือนักออกแบบลายผ้าไหม\nถ้าต้องการให้ผมสร้างลายผ้าไหมให้คุณ?\n พิมพ์ 'สร้างลายผ้าไหม' ได้เลย")
         )
         user_state[user_id] = "awaiting_interaction"  # กำหนดสถานะเป็นการสนทนา
 
