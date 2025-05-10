@@ -1,3 +1,5 @@
+# api/index.py
+
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -6,62 +8,59 @@ from api.chatgpt import ChatGPT
 
 import os
 
+# ENV
 line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 line_handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
-working_status = os.getenv("DEFALUT_TALKING", default = "true").lower() == "true"
+working_status = os.getenv("DEFALUT_TALKING", default="true").lower() == "true"
 
+# App
 app = Flask(__name__)
 chatgpt = ChatGPT()
 
-# domain root
 @app.route('/')
 def home():
     return 'Hello, World!'
 
 @app.route("/webhook", methods=['POST'])
 def callback():
-    # get X-Line-Signature header value
-    signature = request.headers['X-Line-Signature']
-    # get request body as text
+    signature = request.headers.get('X-Line-Signature', '')
     body = request.get_data(as_text=True)
     app.logger.info("Request body: " + body)
-    # handle webhook body
+
     try:
         line_handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
-    return 'OK'
 
+    return 'OK'
 
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     global working_status
     
-    if event.message.type != "text":
-        return
-    
-    if event.message.text == "啟動":
+    user_text = event.message.text.strip()
+
+    if user_text == "啟動":
         working_status = True
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="我是時下流行的AI智能，目前可以為您服務囉，歡迎來跟我互動~"))
+            TextSendMessage(text="我是時下流行的AI智能，目前可以為您服務囉，歡迎來跟我互動~")
+        )
         return
 
-    if event.message.text == "安靜":
+    if user_text == "安靜":
         working_status = False
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="感謝您的使用，若需要我的服務，請跟我說 「啟動」 謝謝~"))
+            TextSendMessage(text="感謝您的使用，若需要我的服務，請跟我說 「啟動」 謝謝~")
+        )
         return
-    
+
     if working_status:
-        chatgpt.add_msg(f"Human:{event.message.text}?\n")
+        chatgpt.add_msg(f"Human:{user_text}?\n")
         reply_msg = chatgpt.get_response().replace("AI:", "", 1)
         chatgpt.add_msg(f"AI:{reply_msg}\n")
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=reply_msg))
-
-
-if __name__ == "__main__":
-    app.run()
+            TextSendMessage(text=reply_msg)
+        )
