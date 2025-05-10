@@ -86,10 +86,9 @@ def handle_message(event):
             )
             user_state.pop(user_id, None)
 
-    # กรณีที่ผู้ใช้ต้องการสนทนากับบอท
-    elif user_id in user_state and user_state[user_id] == "awaiting_interaction":
+# ใช้ GPT เพื่อตอบคำถามทั่วไป
+    elif user_text:
         try:
-            # ใช้ GPT (ChatGPT) สำหรับการสนทนา
             chat_response = client.completions.create(
                 model="gpt-4",
                 prompt=user_text,
@@ -106,8 +105,9 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการตอบคำถาม: {e}")
             )
+
+    # ถ้าบอทไม่เข้าใจคำถาม
     else:
-        # การตอบกลับแบบอื่นๆ
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="ผมไม่เข้าใจคำขอของคุณครับ กรุณาพิมพ์ 'สวัสดี' เพื่อเริ่มต้นการสนทนา")
