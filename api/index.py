@@ -87,14 +87,16 @@ def handle_message(event):
             user_state.pop(user_id, None)
 
 # ใช้ GPT เพื่อตอบคำถามทั่วไป
-    elif user_text:
+    else:
         try:
-            chat_response = client.completions.create(
+            chat_response = openai.ChatCompletion.create(
                 model="gpt-4",
-                prompt=user_text,
-                max_tokens=150
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": user_text}
+                ]
             )
-            bot_reply = chat_response.choices[0].text.strip()
+            bot_reply = chat_response['choices'][0]['message']['content'].strip()
             
             line_bot_api.reply_message(
                 event.reply_token,
@@ -105,10 +107,3 @@ def handle_message(event):
                 event.reply_token,
                 TextSendMessage(text=f"ขออภัย เกิดข้อผิดพลาดในการตอบคำถาม: {e}")
             )
-
-    # ถ้าบอทไม่เข้าใจคำถาม
-    else:
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="ผมไม่เข้าใจคำขอของคุณครับ กรุณาพิมพ์ 'สวัสดี' เพื่อเริ่มต้นการสนทนา")
-        )
