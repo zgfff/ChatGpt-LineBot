@@ -38,32 +38,50 @@ from linebot.models import TextSendMessage, ImageSendMessage
 @line_handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_text = event.message.text.strip()
-    print(f"[DEBUG] User said: {user_text}")
-    
-    # สร้างคำอธิบายจาก ChatGPT
-    chatgpt.add_msg(f"Human: โปรดอธิบายลวดลายผ้าไหมในหัวข้อ '{user_text}' อย่างสร้างสรรค์\n")
-    explanation = chatgpt.get_response().replace("AI:", "", 1).strip()
-    chatgpt.add_msg(f"AI: {explanation}\n")
+    user_id = event.source.user_id
+    reply_token = event.reply_token
 
-    # สร้างภาพจาก DALL·E (OpenAI Image API)
-    response = openai.Image.create(
-        prompt=user_text,
-        n=1,
-        size="1024x1024"
-    )
-    image_url = response['data'][0]['url']
+    try:
+        # 1. แปลงข้อความไทย → Prompt ภาษาอังกฤษ
+        prompt = chatgpt.get_response(
+            f"แปลงข้อความนี้เป็น prompt ภาษาอังกฤษสำหรับสร้างภาพผ้าไหมแบบไทย: {user_text}"
+        ).replace("AI:", "").strip()
 
-    # ส่งทั้งภาพ + ข้อความกลับไปยัง LINE
-    line_bot_api.reply_message(
-        event.reply_token,
-        [
-            TextSendMessage(text=explanation),
-            ImageSendMessage(
-                original_content_url=image_url,
-                preview_image_url=image_url
-            )
+        # 2. สร้างภาพจาก prompt ด้วย OpenAI
+        from openai import OpenAI
+        import os
+
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        image_url = response.data[0].url
+
+        # 3. อธิบายภาพที่สร้างจาก prompt
+        description = chatgpt.get_response(
+            f"ช่วยอธิบายภาพที่สร้างจาก prompt นี้เป็นภาษาไทย: {prompt}"
+        ).replace("AI:", "").strip()
+
+        # 4. ตอบกลับผู้ใช้บน LINE
+        messages = [
+            TextSendMessage(text=f"🌸 คุณต้องการ: {user_text}"),
+            TextSendMessage(text=f"🧵 Prompt ที่ใช้สร้างภาพ:\n{prompt}"),
+            TextSendMessage(text=f"🎨 คำอธิบายภาพ:\n{description}"),
+            TextSendMessage(text=f"🖼️ ภาพลายผ้าไหม:\n{image_url}")
         ]
-    )
+        line_bot_api.reply_message(reply_token, messages)
+
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text="ขออภัย เกิดข้อผิดพลาดในการสร้างภาพผ้าไหม กรุณาลองใหม่อีกครั้งภายหลัง")
+        )
+
 
 
 if __name__ == "__main__":
