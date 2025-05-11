@@ -63,7 +63,7 @@ def handle_message(event):
             img_response = client.images.generate(
                 model="dall-e-3",
                 prompt=prompt,
-                size="1024x1024",
+                size="512x512",
                 quality="hd",
                 n=1
             )
