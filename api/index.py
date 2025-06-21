@@ -39,7 +39,7 @@ def handle_message(event):
     user_text = event.message.text.strip()
 
     # กรณีที่ผู้ใช้ต้องการคุย
-    if user_text.lower() == "สวัสดี" or "ดี" or "hello" in user_text.lower():
+    if user_text.lower() == "สวัสดี" or "hello" in user_text.lower():
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="สวัสดีครับ! ผมคือนักออกแบบลายผ้าไหม\nอยากให้ผมสร้างลายผ้าไหมให้คุณ?\nพิมพ์ 'สร้างลายผ้าไหม' ได้เลย")
