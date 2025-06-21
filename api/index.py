@@ -39,7 +39,7 @@ def handle_message(event):
     user_text = event.message.text.strip()
 
     # กรณีที่ผู้ใช้ต้องการคุย
-    if user_text.lower() == "สวัสดี" or "hello" in user_text.lower():
+    if user_text.lower() == "สวัสดี" or "ดี" or "hello" in user_text.lower():
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="สวัสดีครับ! ผมคือนักออกแบบลายผ้าไหม\nอยากให้ผมสร้างลายผ้าไหมให้คุณ?\nพิมพ์ 'สร้างลายผ้าไหม' ได้เลย")
@@ -47,7 +47,7 @@ def handle_message(event):
         user_state[user_id] = "awaiting_interaction"  # กำหนดสถานะเป็นการสนทนา
 
     # ถ้าผู้ใช้ต้องการให้สร้างภาพ
-    elif "สร้างลายผ้าไหม" in user_text:
+    elif "สร้างลายผ้าไหม" or "สร้าง" or "ทำลาย" or "ทำผ้า" in user_text:
         # ถามคำอธิบายสำหรับการสร้างภาพ
         line_bot_api.reply_message(
             event.reply_token,
