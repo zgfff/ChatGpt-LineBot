@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 user_state = {}
 
 # Hugging Face & ImgBB Config
-HF_TOKEN = os.getenv("HF_API_KEY", "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")
+HF_TOKEN = os.getenv("HF_API_KEY", "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")
 HF_MODEL = "TanapongW/silk_spai"
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY", "b9f20d2368e71aa2e21e2fde732a4cf2")  # ต้องตั้งค่าใน Vercel
 
